@@ -1,69 +1,217 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+import type { MouseEventHandler, ReactNode, FormEvent } from "react";
+
+type Friend = {
+  id: number;
+  name: string;
+  image: string;
+  balance: number;
+};
+
+const initialFriends: Friend[] = [
+  {
+    id: 118836,
+    name: "Clark",
+    image: "https://i.pravatar.cc/48?u=118836",
+    balance: -7,
+  },
+  {
+    id: 933372,
+    name: "Sarah",
+    image: "https://i.pravatar.cc/48?u=933372",
+    balance: 20,
+  },
+  {
+    id: 499476,
+    name: "Anthony",
+    image: "https://i.pravatar.cc/48?u=499476",
+    balance: 0,
+  },
+];
+
+export function Button({
+  children,
+  onClick,
+}: {
+  children: ReactNode;
+  onClick?: MouseEventHandler<HTMLButtonElement>;
+}) {
+  return (
+    <button className="button" onClick={onClick}>
+      {children}
+    </button>
+  );
+}
 
 export default function Home() {
+  const [friends, setFriends] = useState<Friend[]>(initialFriends);
+  const [showAddFriend, setShowAddFriend] = useState(false);
+  const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
+  function OnAddFriend(friend: Friend) {
+    setFriends((friends) => [...friends, friend]);
+  };
+  function HandelShowAddFriend() {
+    setShowAddFriend((show) => !show);
+  }
+  function handleSelection(friend: Friend) {
+    setSelectedFriend((cur) => (cur?.id === friend.id ? null : friend));
+    setShowAddFriend(false);
+  }
+  function handleSplitBill(value: number) {
+    setFriends((friends) =>
+      friends.map((friend) =>
+        friend.id === selectedFriend?.id
+          ? { ...friend, balance: friend.balance + value }
+          : friend
+      )
+    );
+
+    setSelectedFriend(null);
+  }
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="app">
+      <div className="sidebar">
+        <Friends
+          friends={friends}
+          onSelect={handleSelection}
+          selected={selectedFriend}
+          
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+        {showAddFriend && <AddFriendForm onAddFriend={OnAddFriend} />}
+
+        <Button onClick={HandelShowAddFriend}>
+          {showAddFriend ? "close" : "Add FRIEND "}
+        </Button>
+
+      </div>
+      {selectedFriend && (
+        <SplitForm selected={selectedFriend} 
+        onSplitBill={handleSplitBill}
+         key={selectedFriend.id} />
+      )}
+    </div>
+  );
+}
+
+export function Friends({
+  friends,
+  onSelect,
+  selected,
+}: {
+  friends: Friend[];
+  onSelect: (friend: Friend) => void;
+  selected: Friend | null;
+}) {
+  return (
+    <div>
+      <ul>
+        {friends.map((friend) => (
+          <FriendList
+            key={friend.id}
+            friend={friend}
+            onSelect={onSelect}
+            selected={selected?.id === friend.id}
+          />
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export function FriendList({
+  friend,
+  onSelect,
+  selected,
+}: {
+  friend: Friend;
+  onSelect: (friend: Friend) => void;
+  selected: boolean;
+}) {
+  return (
+    <li>
+      <span>
+        <img
+          src={friend.image}
+          alt={friend.name}
+        />
+      </span>
+      <h3>{friend.name}</h3>
+      {friend.balance < 0 &&
+        (<p className="red">    you owes {friend.name} {Math.abs(friend.balance)}€</p>)}
+      {friend.balance > 0 &&
+        (<p className="green">  {friend.name} owes you {Math.abs(friend.balance)}€</p>)}
+      {friend.balance === 0 &&
+        (<p > You and {friend.name} are even</p>)}
+      <Button onClick={() => onSelect(friend)}>
+        {selected ? "Close" : "Select"}
+      </Button>
+    </li>
+  );
+}
+
+export function AddFriendForm({ onAddFriend }: { onAddFriend: (friend: Friend) => void }) {
+  const [name, setName] = useState('');
+  const [image, setImage] = useState("https://i.pravatar.cc/48");
+  function handelSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!name || !image) return;
+    const id = crypto.randomUUID();
+    const newFriend: Friend = {
+      id: Number(id.slice(0, 8)),
+      name,
+      image: `${image}?=${id}`,
+      balance: 0
+    }
+    onAddFriend(newFriend);
+    setName('');
+    setImage("https://i.pravatar.cc/48");
+  }
+  return (
+    <div>
+      <form className="form-add-friend" onSubmit={handelSubmit}>
+        <label> Friend name :</label>
+        <input type="text" value={name} onChange={(event) => setName(event.target.value)} />
+        <label>Image URL :</label>
+        <input type="text" value={image} onChange={(event) => setImage(event.target.value)} />
+        <Button>Add Friend</Button>
+      </form>
+
+    </div>
+  );
+}
+
+export function SplitForm({ selected, onSplitBill }: { selected: Friend | null; onSplitBill: (value: number) => void }) {
+  const friendName = selected?.name ?? "X";
+  const [bill, setBill] = useState(Number(""));
+  const [paidByUser, setPaidByUser] = useState(Number(""));
+  const [whoIsPaying, setWhoIsPaying] = useState("user");
+  const paidByFriend = bill - paidByUser;
+
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+
+    if (!bill || !paidByUser) return;
+    onSplitBill(whoIsPaying === "user" ? paidByFriend : -paidByUser);
+  }
+  return (
+    <div>
+      <form className="form-split-bill" onSubmit={handleSubmit}>
+        <h2>Split a bill with {friendName}</h2>
+        <label>💰 Bill value</label>
+        <input type="text" value={bill} onChange={(e) => setBill(Number(e.target.value))} />
+        <label>🧍‍♀️ Your expense</label>
+        <input type="text" value={paidByUser} onChange={(e) => setPaidByUser(Number(e.target.value))} />
+        <label>👫 {friendName}'s expense</label>
+        <input type="text" value={paidByFriend} disabled />
+        <label>🤑 Who is paying the bill</label>
+        <select value={whoIsPaying} onChange={(e) => setWhoIsPaying(e.target.value)}>
+          <option value="user">YOU</option>
+          <option value="friend">{friendName}</option>
+        </select>
+        <Button>Split bill</Button>
+      </form>
     </div>
   );
 }
